@@ -1,0 +1,13 @@
+.env
+.venv
+__pycache__
+.vscode
+.env.example
+.env.example
+.playwright_session
+.playwright_storage
+.playwright_traces
+.playwright_test-results
+playwright_session
+session.json
+test_claude.py
