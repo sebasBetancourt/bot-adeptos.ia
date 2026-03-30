@@ -1,14 +1,35 @@
-from typing import Annotated, TypedDict, List
+from typing import Annotated, TypedDict, List, Optional
 from langgraph.graph.message import add_messages
 from langchain_core.messages import BaseMessage
 
+
 class AgentState(TypedDict):
-    # Standard LangGraph message history
+    """
+    Complete state for the AI Marketing Agent workflow.
+    Passed between all 6 nodes in the graph.
+    """
+    # LangGraph messages
     messages: Annotated[List[BaseMessage], add_messages]
-    
-    # Custom business state
-    whatsapp_user: str          # sender phone number
-    last_order_raw: str         # The original user message/order
-    current_leads: List[dict]   # Leads found in this session
-    screenshot_path: str        # Path to the screenshot for approval
-    is_approved: bool           # Approval status for sales action
+
+    # WhatsApp context
+    whatsapp_user: str              # Sender phone number
+
+    # Search context
+    last_order_raw: str             # Original user message / extracted query
+
+    # Extraction pipeline
+    raw_search_text: str            # Raw text from LinkedIn (NOT html)
+    profile_urls: List[str]         # Profile URLs extracted from href attrs
+
+    # Lead processing
+    current_leads: List[dict]       # Leads structured by RAG
+    classified_leads: List[dict]    # Leads with tier assigned
+
+    # Personalized outreach (Node 6)
+    generated_messages: List[dict]  # Cold outreach messages per lead
+
+    # Output
+    screenshot_path: str            # Path to screenshot
+    db_report: str                  # "3 saved, 1 duplicate"
+    is_approved: bool               # Approval status for sales action
+
