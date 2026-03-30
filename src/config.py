@@ -17,6 +17,10 @@ class Config:
     # AI Configuration (Anthropic)
     ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
 
+    # LinkedIn Credentials (auto-login)
+    LINKEDIN_EMAIL = os.getenv("LINKEDIN_EMAIL", "")
+    LINKEDIN_PASSWORD = os.getenv("LINKEDIN_PASSWORD", "")
+
     # Database Configuration
     DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///marketing_db.sqlite") # Default to SQLite for easy initial startup
 
