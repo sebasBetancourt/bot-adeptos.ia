@@ -1,0 +1,18 @@
+.git
+__pycache__
+*.pyc
+.env
+.pytest_cache
+*.sqlite
+pgdata/
+.venv/
+venv/
+.idea/
+.vscode/
+
+# Playwright browser specific data
+playwright_session/
+SingletonCookie
+SingletonLock
+*.png
+*.pdf

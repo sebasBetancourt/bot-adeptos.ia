@@ -1,0 +1,83 @@
+================================================================================
+          RESUMEN Y ESTRUCTURA DEL PROYECTO: AI MARKETING CO-PILOT (Adeptos Bot)
+================================================================================
+
+1. OBJETIVO GENERAL
+--------------------------------------------------------------------------------
+El proyecto es un Agente de IA Autónomo diseñado para WhatsApp que funciona 
+como copiloto de Outbound Marketing B2B.
+
+Su meta es recibir una orden en lenguaje natural por WhatsApp (ej. "Búscame 
+gerentes comerciales en Miami"), e iniciar un flujo autónomo (LangGraph) 
+que involucre navegar por la web (LinkedIn), buscar leads, identificar su 
+perfil, guardarlos en una base de datos sin duplicarlos,  generar 
+mensajes de prospección hiper-personalizados ("Cold Emailing" con el marco 
+estratégico de Corey Haines) y enviarlos.
+
+
+2. ESTRUCTURA Y ARQUITECTURA (Clean Architecture)
+--------------------------------------------------------------------------------
+El código está dividido en capas para garantizar escalabilidad, seguridad 
+y buenas prácticas de Programación Orientada a Objetos (POO):
+
+> RAÍZ DEL PROYECTO
+- docker-compose.yml: Archivo que orquesta 2 contenedores de Docker (la BD de Postgres y este bot).
+- Dockerfile: "Receta" del contenedor del bot. Está basado en una imagen de Microsoft Playwright para asegurar que el navegador funcione sin romper tu sistema en producción.
+- migration.sql: Script que crea automáticamente las tablas SQL (ej. "leads") cuando la BD arranca por 1ra vez.
+- requirements.txt: Las librerías de Python requeridas (Flask, LangGraph, Playwright, SQLAlchemy, Psycopg2).
+- .env: Archivo oculto y fundamental con tus credenciales de Twilio, Claude, LinkedIn y Base de Datos.
+
+> DOCUMENTACIÓN DE AGENTES (.agents/)
+- product-marketing-context.md: Toda la información de tu producto (ej. costos de $8,500 en fugas, pruebas de Valvetronic), para que Claude la lea y responda como un experto.
+- skills/cold-email.md & sales-enablement.md: Archivos Markdown donde se le enseña al bot cómo aplicar técnicas avanzadas de venta humana, reduciendo su comportamiento "robótico".
+
+> CÓDIGO FUENTE (src/)
+- main.py: Es el corazón y punto de entrada. Inicia la BD, enlaza las rutas web (Blueprints) y arranca el servidor.
+
+    * src/api/: 
+      - routes.py: Endpoints ("Hooks"). Aquí Flask recibe la petición (POST) que dispara Twilio cuando alguien te escribe por WhatsApp y lo manda al pipeline de IA.
+      
+    * src/core/:
+      - config.py: Clase central para administrar las variables .env.
+      - database.py: Administrador ("DatabaseManager" - POO) que conecta tu proyecto a PostgreSQL usando SQLAlchemy.
+      
+    * src/domain/:
+      - models.py: El "plano" de tus datos. Define la entidad "Lead", la tabla de Base de Datos y su estado (si es NUEVO, DESCARTADO, etc.).
+      
+    * src/repositories/: 
+      - base_repository.py: Molde de seguridad base para interactuar con la DB (Hacer consultas, insertar, editar).
+      - lead_repository.py: Operaciones específicas para Leads, como la técnica anti-duplicados.
+      
+    * src/services/:
+      - twilio_service.py: Interpreta la respuesta y responde de vuelta a WhatsApp.
+      - browser_service.py: Orquesta al navegador oculto (stealth Playwright) para entrar a LinkedIn sin ser detectado como bot.
+      - targeting_service.py: Diccionario de parámetros pre-configurados de industrias y perfiles ideales (Enterprise, Starter, Skip keywords).
+
+    * src/graph/:
+      - nodes.py (y workflow + state): La parte más poderosa ("El Cerebro"). Enlaza LangGraph formando la máquina de estados por donde pasa la inteligencia.
+
+
+3. FLUJO DE TRABAJO DEL AGENTE
+--------------------------------------------------------------------------------
+El "viaje" de un lead por los 7 pasos funcionales dentro de `nodes.py`:
+
+(1) receive_order_node: 
+    Escucha y usa Sonnet 3.5 para limpiar el mensaje de WhatsApp humano y entender exactamente qué y dónde se busca.
+
+(2) navigate_playwright_node: 
+    Ejecuta el servicio de Browser, hace login si es necesario, busca en LinkedIn, extrae el texto "en bruto" resultante de la búsqueda web para abaratar costos en el LLM.
+
+(3) extract_leads_rag_node: 
+    Usa el modelo Haiku 3.5 (porque es el más económico y veloz para esta tarea base) para ordenar el texto caótico extraído de la web y convertirlo en una radiografía JSON útil de cada persona.
+
+(4) classify_leads_node: 
+    Analiza a través de Python puro ($0 costo de tokens) a cada lead recién encontrado y determina si es un contacto ENTERPRISE (Prioridad), STARTER u omitible basándose en tu `TargetingService`.
+
+(5) save_leads_node: 
+    Terceriza los datos al Repositorio. Si la persona existe en PostgreSQL la omite, si es nueva la guarda.
+
+(6) generate_messages_node: 
+    Carga en vivo el contexto de Adeptos y los Marketing Skills para escribir, empleando a Claude Sonnet, un mensaje de conexión ("Cold Email") 1 a 1 para cada perfil antes de iniciar sesión.
+
+(7) visit_and_connect_node:
+    El navegador se reactiva. Va perfil por perfil agregando una pausa "humana" de 30 a 60 seg, hace click en "Conectar" y pega el mensaje de venta antes de agendar y soltar un mensaje de éxito a tu celular confirmando la maniobra.

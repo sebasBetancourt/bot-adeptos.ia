@@ -1,0 +1,44 @@
+services:
+  bot-adeptos:
+    build: .
+    container_name: adeptos_bot
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # Sobrescribimos DATABASE_URL para que apunte al contenedor 'db' local en la misma red Docker.
+      # Las demás variables (Twilio, Anthropic, LinkedIn) las jalará de tu archivo .env
+      - DATABASE_URL=postgresql://adeptos_user:adeptos_pass@db:5432/adeptos_db
+      - FLASK_ENV=production
+      - PORT=5000
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15-alpine
+    container_name: adeptos_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=adeptos_user
+      - POSTGRES_PASSWORD=adeptos_pass
+      - POSTGRES_DB=adeptos_db
+    ports:
+      - "5432:5432" # Expuesto por si quieres conectarte de forma local (PgAdmin, DBeaver)
+    volumes:
+      # Para que la información de la DB no se pierda al apagar el contenedor
+      - pgdata:/var/lib/postgresql/data
+      # Auto-inicializar la BD: PostgreSQL ejecutará los scripts en este directorio la primera vez que inicia
+      - ./migration.sql:/docker-entrypoint-initdb.d/migration.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U adeptos_user -d adeptos_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

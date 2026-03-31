@@ -1,5 +1,6 @@
 from twilio.twiml.messaging_response import MessagingResponse
 from flask import request
+from typing import Dict
 
 class TwilioService:
     @staticmethod

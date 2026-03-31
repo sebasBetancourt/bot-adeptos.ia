@@ -11,7 +11,12 @@ class AgentState(TypedDict):
     # LangGraph messages
     messages: Annotated[List[BaseMessage], add_messages]
 
-    # WhatsApp context
+    # Routing Context
+    intention: str                  # e.g., "REQUEST_REPORT" or "MARKETING_LEAD"
+    source_channel: str             # e.g., "whatsapp" or "teams"
+    is_admin: bool                  # True if sender is Admin (Jefe)
+
+    # Contact context
     whatsapp_user: str              # Sender phone number
 
     # Search context
